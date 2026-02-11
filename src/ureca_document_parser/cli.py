@@ -12,6 +12,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from .models import ParseError
 from .registry import get_registry
 
 
@@ -62,13 +63,13 @@ def main() -> None:
 
     try:
         doc = registry.parse(input_path)
-    except ValueError as e:
+    except (ValueError, ParseError) as e:
         print(f"오류: {e}", file=sys.stderr)
         sys.exit(1)
 
     try:
         result = registry.write(doc, args.format)
-    except ValueError as e:
+    except (ValueError, ParseError) as e:
         print(f"오류: {e}", file=sys.stderr)
         sys.exit(1)
 
