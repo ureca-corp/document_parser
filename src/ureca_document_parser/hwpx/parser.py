@@ -249,7 +249,7 @@ def parse_hwpx(filepath: str | Path) -> Document:
 
     try:
         zf = zipfile.ZipFile(str(path), "r")
-    except (zipfile.BadZipFile, Exception) as e:
+    except (zipfile.BadZipFile, OSError) as e:
         raise ParseError(f"유효한 HWPX 파일이 아닙니다: {path}") from e
     with zf:
         section_files = _find_section_files(zf)
