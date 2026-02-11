@@ -1,0 +1,105 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pyproject.toml'
+
+permissions:
+  contents: write
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version-changed: ${{ steps.check.outputs.changed }}
+      new-version: ${{ steps.extract.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if version changed
+        id: check
+        run: |
+          git diff HEAD^ HEAD -- pyproject.toml > diff.txt
+          if grep -q '^[+-]version = ' diff.txt; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract new version
+        id: extract
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "New version detected: $VERSION"
+
+  create-release:
+    needs: check-version
+    if: needs.check-version.outputs.version-changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create and push tag
+        env:
+          VERSION: ${{ needs.check-version.outputs.new-version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${VERSION}" -m "Release v${VERSION}"
+          git push origin "v${VERSION}"
+
+      - name: Generate release notes
+        id: notes
+        env:
+          VERSION: ${{ needs.check-version.outputs.new-version }}
+        run: |
+          # 마지막 태그 이후 커밋 로그 추출
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s" --no-merges)
+          else
+            COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %s" --no-merges)
+          fi
+
+          # 멀티라인 출력 처리
+          {
+            echo "notes<<EOF"
+            echo "## 변경사항"
+            echo ""
+            echo "$COMMITS"
+            echo ""
+            echo "## 설치"
+            echo ""
+            echo '```bash'
+            echo "uv add ureca_document_parser==${VERSION}"
+            echo '```'
+            echo ""
+            echo "또는 pip:"
+            echo ""
+            echo '```bash'
+            echo "pip install ureca_document_parser==${VERSION}"
+            echo '```'
+            echo ""
+            echo "📚 [문서](https://ureca-corp.github.io/document_parser/)"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.check-version.outputs.new-version }}
+          NOTES: ${{ steps.notes.outputs.notes }}
+        with:
+          tag_name: v${{ needs.check-version.outputs.new-version }}
+          release_name: Release v${{ needs.check-version.outputs.new-version }}
+          body: ${{ steps.notes.outputs.notes }}
+          draft: false
+          prerelease: false
