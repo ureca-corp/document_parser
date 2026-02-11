@@ -72,7 +72,9 @@ def convert(
         >>> chunks = convert("report.hwp", chunks=True)
 
         >>> # 청크 크기 커스텀
-        >>> chunks = convert("report.hwp", chunks=True, chunk_size=500, chunk_overlap=100)
+        >>> chunks = convert(
+        ...     "report.hwp", chunks=True, chunk_size=500, chunk_overlap=100
+        ... )
     """
     registry = get_registry()
     doc = registry.parse(input_path)
@@ -94,7 +96,12 @@ def convert(
         )
         return splitter.create_documents(
             [md],
-            metadatas=[{"source": str(input_path), "format": doc.metadata.source_format}],
+            metadatas=[
+                {
+                    "source": str(input_path),
+                    "format": doc.metadata.source_format,
+                }
+            ],
         )
     else:
         # Markdown 문자열
