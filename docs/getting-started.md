@@ -14,26 +14,16 @@ uv add ureca_document_parser
 
 ```bash
 # LangChain 청크 분할
-uv add ureca_document_parser[langchain]
+uv add "ureca_document_parser[langchain]"
 
 # PDF 파싱 지원
-uv add ureca_document_parser[pdf]
+uv add "ureca_document_parser[pdf]"
 
 # OCR 지원
-uv add ureca_document_parser[ocr]
+uv add "ureca_document_parser[ocr]"
 
 # 모든 기능
-uv add ureca_document_parser[all]
-```
-
-### 개발 환경
-
-소스 코드를 직접 수정하고 싶다면 다음과 같이 설정하세요.
-
-```bash
-git clone https://github.com/ureca-corp/document_parser.git
-cd document_parser
-uv sync --extra dev
+uv add "ureca_document_parser[all]"
 ```
 
 ## CLI 사용법
@@ -43,69 +33,91 @@ uv sync --extra dev
 HWP 또는 HWPX 파일을 Markdown으로 변환할 수 있어요.
 
 ```bash
-ureca_document_parser document.hwp -o output.md
-ureca_document_parser document.hwpx -o output.md
+uv run ureca_document_parser 보고서.hwp -o 보고서.md
+uv run ureca_document_parser 제안서.hwpx -o 제안서.md
+```
+
+`-o` 옵션을 생략하면 결과가 표준 출력으로 나와요.
+
+```bash
+uv run ureca_document_parser 보고서.hwp
+```
+
+### 출력 포맷 지정
+
+`-f` 옵션으로 출력 포맷을 지정할 수 있어요. 현재는 `markdown`이 기본값이에요.
+
+```bash
+uv run ureca_document_parser 보고서.hwp -f markdown -o 보고서.md
 ```
 
 ### 지원 포맷 확인
 
 ```bash
-ureca_document_parser --list-formats
+uv run ureca_document_parser --list-formats
 ```
 
-### python -m 실행
+## Python API 사용법
 
-```bash
-uv run python -m ureca_document_parser document.hwp -o output.md
-```
+### 파일 변환
 
-## 라이브러리 사용법
-
-세 가지 레벨의 API를 제공해요. 용도에 맞게 선택하세요.
-
-### 간편 변환 (High-level)
-
-파일 경로만 전달하면 바로 변환돼요.
+가장 간단한 방법이에요. 입력 파일 경로와 출력 파일 경로만 전달하면 돼요.
 
 ```python
 from ureca_document_parser import convert
 
-convert("document.hwp", "output.md")
+convert("보고서.hwp", "output/보고서.md")
 ```
 
-### 레지스트리 기반 (Mid-level)
+출력 디렉토리가 없으면 자동으로 생성해요.
 
-파싱과 출력을 분리해서 제어할 수 있어요.
+### 변환 결과를 문자열로 받기
+
+파일로 저장하지 않고 Markdown 문자열을 직접 받고 싶을 때 사용해요.
 
 ```python
 from ureca_document_parser import get_registry
 
 registry = get_registry()
-doc = registry.parse("document.hwp")
-md = registry.write(doc, "markdown")
+doc = registry.parse("보고서.hwp")
+md_text = registry.write(doc, "markdown")
+
+print(md_text)
 ```
 
-### 직접 파서/Writer 사용 (Low-level)
+### Document 모델 활용
 
-특정 파서나 Writer를 직접 import해서 사용할 수도 있어요.
+파싱 결과를 프로그래밍 방식으로 처리하고 싶을 때 `Document` 모델을 직접 다룰 수 있어요.
 
 ```python
-from ureca_document_parser.hwp import HwpParser
-from ureca_document_parser.writers.markdown import MarkdownWriter
+from ureca_document_parser import get_registry
+from ureca_document_parser.models import Paragraph, Table
 
-doc = HwpParser.parse("document.hwp")
-md = MarkdownWriter.write(doc)
+registry = get_registry()
+doc = registry.parse("보고서.hwp")
+
+# 헤딩만 추출
+headings = [
+    el for el in doc.elements
+    if isinstance(el, Paragraph) and el.heading_level > 0
+]
+for h in headings:
+    print(f"{'#' * h.heading_level} {h.text}")
+
+# 테이블 개수 확인
+tables = [el for el in doc.elements if isinstance(el, Table)]
+print(f"테이블 {len(tables)}개 발견")
 ```
 
-### LangChain 청크 분할
+### LangChain 연동
 
-RAG 파이프라인에서 사용할 수 있는 LangChain Document 리스트를 생성해요.
+RAG 파이프라인에 바로 연결할 수 있는 LangChain Document 리스트를 생성해요.
 
 ```python
 from ureca_document_parser import convert_to_chunks
 
 chunks = convert_to_chunks(
-    "document.hwp",
+    "보고서.hwp",
     chunk_size=1000,
     chunk_overlap=200,
 )
@@ -113,8 +125,42 @@ chunks = convert_to_chunks(
 for chunk in chunks:
     print(chunk.page_content[:100])
     print(chunk.metadata)
+    # {'source': '보고서.hwp', 'format': 'hwp'}
 ```
 
 !!! note
-    `convert_to_chunks`를 사용하려면 `langchain` 추가 의존성이 필요해요:
-    `uv add ureca_document_parser[langchain]`
+    `convert_to_chunks`를 사용하려면 `langchain` 추가 의존성이 필요해요.
+
+    ```bash
+    uv add "ureca_document_parser[langchain]"
+    ```
+
+### 여러 파일 일괄 변환
+
+```python
+from pathlib import Path
+from ureca_document_parser import convert
+
+hwp_files = Path("documents").glob("*.hwp")
+
+for hwp_file in hwp_files:
+    output = Path("output") / hwp_file.with_suffix(".md").name
+    convert(hwp_file, output)
+    print(f"변환 완료: {hwp_file.name} → {output.name}")
+```
+
+## 개발 환경 설정
+
+라이브러리 자체를 수정하거나 기여하고 싶다면 다음과 같이 설정하세요.
+
+```bash
+git clone https://github.com/ureca-corp/document_parser.git
+cd document_parser
+uv sync --extra dev
+```
+
+테스트 실행은 다음과 같이 해요.
+
+```bash
+uv run pytest tests/ -v
+```
