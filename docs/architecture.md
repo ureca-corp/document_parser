@@ -2,43 +2,118 @@
 
 ## Pipeline
 
-```
-Input file  →  FormatRegistry  →  Parser  →  Document  →  Writer  →  Output string
- (.hwp)         (auto-route)     (HwpParser)   (model)   (MarkdownWriter)  (.md)
+```mermaid
+flowchart LR
+    A["Input file\n(.hwp / .hwpx)"] --> B["FormatRegistry\n(auto-route)"]
+    B --> C["Parser\n(HwpParser / HwpxParser)"]
+    C --> D["Document\n(model)"]
+    D --> E["Writer\n(MarkdownWriter)"]
+    E --> F["Output\n(.md)"]
+
+    D --> G["TextSplitter\n(optional)"]
+    G --> H["LangChain Documents\n(chunks)"]
 ```
 
 ## Module Dependency Graph
 
-```
-docparser/
-├── __init__.py        ← models, protocols, registry
-├── cli.py             ← registry
-├── models.py          ← (standalone, no internal deps)
-├── protocols.py       ← models
-├── registry.py        ← models, parsers/*, writers/*
-├── parsers/
-│   ├── hwp.py         ← models
-│   └── hwpx.py        ← models
-└── writers/
-    └── markdown.py    ← models
+```mermaid
+graph TD
+    init["__init__.py"] --> models
+    init --> protocols
+    init --> registry
+
+    cli["cli.py"] --> registry
+    cli --> models
+
+    protocols --> models
+    registry --> models
+    registry --> hwp_parser
+    registry --> hwpx_parser
+    registry --> md_writer
+
+    subgraph "hwp/"
+        hwp_parser["parser.py"] --> models
+        hwp_parser --> styles
+        hwp_parser --> records
+        hwp_parser --> text
+        hwp_parser --> tables
+        tables["tables.py"] --> models
+        tables --> records
+        tables --> text
+        records["records.py"]
+        text["text.py"]
+    end
+
+    subgraph "hwpx/"
+        hwpx_parser["parser.py"] --> models
+        hwpx_parser --> styles
+    end
+
+    subgraph "writers/"
+        md_writer["markdown.py"] --> models
+    end
+
+    models["models.py"]
+    styles["styles.py"]
 ```
 
 핵심 원칙: **파서와 Writer는 `models.py`에만 의존**한다. 서로를 직접 import하지 않는다.
 
 ## Document Model
 
-`Document`는 파싱 결과의 중간 표현(IR)이다. 모든 파서는 이 모델을 생산하고, 모든 Writer는 이 모델을 소비한다.
+```mermaid
+classDiagram
+    class Document {
+        +list~DocumentElement~ elements
+        +Metadata metadata
+    }
+    class Metadata {
+        +str title
+        +str author
+        +str source_format
+        +dict extra
+    }
+    class Paragraph {
+        +str text
+        +int heading_level
+    }
+    class Table {
+        +list~TableRow~ rows
+    }
+    class TableRow {
+        +list~TableCell~ cells
+    }
+    class TableCell {
+        +list~Paragraph | Table~ content
+    }
+    class Image {
+        +str alt_text
+        +str source
+        +bytes data
+        +str ocr_text
+    }
+    class ListItem {
+        +str text
+        +int level
+        +bool ordered
+    }
+    class Link {
+        +str text
+        +str url
+    }
+    class HorizontalRule
 
-```python
-Document
-├── metadata: Metadata (title, author, source_format, ...)
-└── elements: list[DocumentElement]
-    ├── Paragraph (text, heading_level)
-    ├── Table (rows → cells → paragraphs)
-    ├── Image (alt_text, source, data, ocr_text)
-    ├── ListItem (text, level, ordered)
-    ├── Link (text, url)
-    └── HorizontalRule
+    Document --> Metadata
+    Document --> Paragraph
+    Document --> Table
+    Document --> Image
+    Document --> ListItem
+    Document --> Link
+    Document --> HorizontalRule
+    Table --> TableRow
+    TableRow --> TableCell
+    TableCell --> Paragraph
+    TableCell --> Table
 ```
 
 ## FormatRegistry
@@ -93,9 +168,16 @@ HWP 바이너리는 레코드 스트림이다. 각 레코드의 헤더는 4바�
 
 ### 테이블 파싱 3단계
 
-1. **`_find_table_ctrl()`** — CTRL_HEADER(tbl) 레코드를 찾아 ctrl_level 반환
-2. **`_read_table_dimensions()`** — HWPTAG_TABLE에서 행/열 수 추출
-3. **`_collect_table_cells()`** — LIST_HEADER + PARA_TEXT에서 셀 텍스트 수집, Table 빌드
+```mermaid
+flowchart TD
+    A["Phase 1: find_table_ctrl()"] -->|"ctrl_level"| B["Phase 2: read_table_dimensions()"]
+    B -->|"n_rows, n_cols"| C["Phase 3: collect_table_cells()"]
+    C --> D["Table"]
+
+    A1["CTRL_HEADER에서\ntbl 컨트롤 탐색"] --> A
+    B1["HWPTAG_TABLE에서\n행/열 수 추출"] --> B
+    C1["LIST_HEADER + PARA_TEXT에서\n셀 텍스트 수집"] --> C
+```
 
 ### RecordCursor
 

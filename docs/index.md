@@ -15,7 +15,7 @@
 ### 설치
 
 ```bash
-pip install ureca_document_parser
+uv add ureca_document_parser
 ```
 
 ### CLI 사용

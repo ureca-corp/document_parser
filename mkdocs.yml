@@ -1,8 +1,8 @@
 site_name: ureca_document_parser
 site_description: Multi-format document parser and converter (HWP, HWPX → Markdown)
-site_url: https://ureca-team.github.io/document_parser/
-repo_url: https://github.com/ureca-team/document_parser
-repo_name: ureca-team/document_parser
+site_url: https://ureca-corp.github.io/document_parser/
+repo_url: https://github.com/ureca-corp/document_parser
+repo_name: ureca-corp/document_parser
 
 theme:
   name: material
@@ -43,7 +43,11 @@ plugins:
 markdown_extensions:
   - admonition
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite

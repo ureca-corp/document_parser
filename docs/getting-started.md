@@ -5,29 +5,29 @@
 ### 기본 설치
 
 ```bash
-pip install ureca_document_parser
+uv add ureca_document_parser
 ```
 
 ### 선택적 의존성
 
 ```bash
 # LangChain 청크 분할
-pip install ureca_document_parser[langchain]
+uv add ureca_document_parser[langchain]
 
 # PDF 파싱 지원
-pip install ureca_document_parser[pdf]
+uv add ureca_document_parser[pdf]
 
 # OCR 지원
-pip install ureca_document_parser[ocr]
+uv add ureca_document_parser[ocr]
 
 # 모든 기능
-pip install ureca_document_parser[all]
+uv add ureca_document_parser[all]
 ```
 
 ### 개발 환경
 
 ```bash
-git clone https://github.com/ureca-team/document_parser.git
+git clone https://github.com/ureca-corp/document_parser.git
 cd document_parser
 uv sync --extra dev
 ```
@@ -50,7 +50,7 @@ ureca_document_parser --list-formats
 ### python -m 실행
 
 ```bash
-python -m ureca_document_parser document.hwp -o output.md
+uv run python -m ureca_document_parser document.hwp -o output.md
 ```
 
 ## 라이브러리 사용법
@@ -103,4 +103,4 @@ for chunk in chunks:
 
 !!! note
     `convert_to_chunks`를 사용하려면 `langchain` 추가 의존성이 필요합니다:
-    `pip install ureca_document_parser[langchain]`
+    `uv add ureca_document_parser[langchain]`
