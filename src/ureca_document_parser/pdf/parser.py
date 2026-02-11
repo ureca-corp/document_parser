@@ -18,10 +18,9 @@ class PdfParser:
     """
 
     @staticmethod
-    def can_parse(file_path: str | PathLike[str]) -> bool:
-        """Check if file can be parsed as PDF."""
-        path = Path(file_path)
-        return path.suffix.lower() == ".pdf"
+    def extensions() -> list[str]:
+        """Return list of supported file extensions."""
+        return [".pdf"]
 
     @staticmethod
     def parse(file_path: str | PathLike[str]) -> Document:
