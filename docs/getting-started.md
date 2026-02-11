@@ -12,17 +12,33 @@ uv add ureca_document_parser
 
 필요한 기능에 따라 추가 의존성을 설치할 수 있어요.
 
+#### LangChain 청크 분할
+
+[langchain-text-splitters](https://python.langchain.com/docs/how_to/recursive_text_splitter/)를 사용해서 문서를 RAG용 청크로 분할해요.
+
 ```bash
-# LangChain 청크 분할
 uv add "ureca_document_parser[langchain]"
+```
 
-# PDF 파싱 지원
+#### PDF 파싱
+
+[PyMuPDF](https://pymupdf.readthedocs.io/)를 사용해서 PDF 파일을 파싱해요.
+
+```bash
 uv add "ureca_document_parser[pdf]"
+```
 
-# OCR 지원
+#### OCR
+
+[Pillow](https://pillow.readthedocs.io/) + [pytesseract](https://github.com/madmaze/pytesseract)를 사용해서 이미지에서 텍스트를 추출해요.
+
+```bash
 uv add "ureca_document_parser[ocr]"
+```
 
-# 모든 기능
+#### 모든 기능
+
+```bash
 uv add "ureca_document_parser[all]"
 ```
 
@@ -111,7 +127,7 @@ print(f"테이블 {len(tables)}개 발견")
 
 ### LangChain 연동
 
-RAG 파이프라인에 바로 연결할 수 있는 LangChain Document 리스트를 생성해요.
+RAG 파이프라인에 바로 연결할 수 있는 [LangChain](https://python.langchain.com/) Document 리스트를 생성해요.
 
 ```python
 from ureca_document_parser import convert_to_chunks

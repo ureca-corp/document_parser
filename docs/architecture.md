@@ -6,14 +6,14 @@
 
 ```mermaid
 flowchart LR
-    A["Input file\n(.hwp / .hwpx)"] --> B["FormatRegistry\n(auto-route)"]
-    B --> C["Parser\n(HwpParser / HwpxParser)"]
-    C --> D["Document\n(model)"]
+    A["입력 파일\n(.hwp / .hwpx)"] --> B["FormatRegistry\n(자동 라우팅)"]
+    B --> C["파서\n(HwpParser / HwpxParser)"]
+    C --> D["Document\n(모델)"]
     D --> E["Writer\n(MarkdownWriter)"]
-    E --> F["Output\n(.md)"]
+    E --> F["출력\n(.md)"]
 
-    D --> G["TextSplitter\n(optional)"]
-    G --> H["LangChain Documents\n(chunks)"]
+    D --> G["TextSplitter\n(선택)"]
+    G --> H["LangChain Documents\n(청크)"]
 ```
 
 ## 모듈 의존성 그래프
@@ -156,7 +156,7 @@ class Writer(Protocol):
 
 ## HWP 파서 내부 구조
 
-### Record 파싱
+### 레코드 파싱
 
 HWP 바이너리는 레코드 스트림이에요. 각 레코드의 헤더는 4바이트로 구성돼요.
 
@@ -166,7 +166,7 @@ HWP 바이너리는 레코드 스트림이에요. 각 레코드의 헤더는 4�
 
 `size == 0xFFF`이면 다음 4바이트가 실제 크기를 담고 있어요.
 
-### Character 스캐닝
+### 문자 스캐닝
 
 `scan_para_chars()`는 PARA_TEXT 바이트를 순회하며 `CharInfo`를 yield해요. 확장 제어문자(16바이트)와 일반 문자(2바이트)를 올바르게 구분해요.
 
@@ -178,8 +178,8 @@ HWP 바이너리는 레코드 스트림이에요. 각 레코드의 헤더는 4�
 
 ```mermaid
 flowchart TD
-    A["Phase 1: find_table_ctrl()"] -->|"ctrl_level"| B["Phase 2: read_table_dimensions()"]
-    B -->|"n_rows, n_cols"| C["Phase 3: collect_table_cells()"]
+    A["1단계: find_table_ctrl()"] -->|"ctrl_level"| B["2단계: read_table_dimensions()"]
+    B -->|"n_rows, n_cols"| C["3단계: collect_table_cells()"]
     C --> D["Table"]
 
     A1["CTRL_HEADER에서\ntbl 컨트롤 탐색"] --> A
