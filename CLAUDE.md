@@ -1,88 +1,87 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Project Overview
 
-`docparser` — Multi-format document parser and converter. Parses Korean word processor (아래한글) HWP/HWPX files and outputs structured Markdown. Designed as a PyPI-distributable package with clean architecture for easy format extension.
+`ureca_document_parser` — Multi-format document parser and converter. Parses Korean word processor (아래한글) HWP/HWPX files and outputs structured Markdown or LangChain Document chunks. Designed as a PyPI-distributable package with clean architecture for easy format extension.
 
 ## Commands
 
 ```bash
-# Install dependencies (uses uv, not pip)
 uv sync
-
-# Run converter (CLI)
-uv run docparser <file.hwp|file.hwpx> -o <output.md>
-uv run docparser <file.hwp>                          # stdout
-uv run docparser --list-formats                      # 지원 형식 출력
-
-# Run as module
-uv run python -m docparser <file.hwp> -o <output.md>
-
-# Build package
+uv run ureca_document_parser <file.hwp|file.hwpx> -o <output.md>
+uv run ureca_document_parser --list-formats
+uv run python -m ureca_document_parser <file.hwp> -o <output.md>
+uv run pytest tests/ -v
 uv build
 ```
 
 ## Architecture
 
-**Pipeline**: Input file → Format registry → Parser → Document model → Writer → Output
+**Pipeline**: Input file → Format registry → Parser → Document model → Writer → Output (or → TextSplitter → LangChain Documents)
 
 ```
-src/docparser/
-├── __init__.py        # Public API (convert, get_registry, models)
-├── __main__.py        # python -m docparser 지원
+src/ureca_document_parser/
+├── __init__.py        # Public API (convert, convert_to_chunks, get_registry)
+├── __main__.py        # python -m ureca_document_parser
 ├── cli.py             # CLI (argparse, registry 기반 자동 라우팅)
 ├── models.py          # Document model (Paragraph, Table, Image, ListItem, ...)
 ├── protocols.py       # Parser / Writer Protocol (구조적 서브타이핑)
-├── registry.py        # FormatRegistry (확장자→파서, 포맷명→Writer 매핑)
-├── parsers/
-│   ├── hwp.py         # HWP v5 binary parser (olefile)
-│   └── hwpx.py        # HWPX parser (zipfile + xml.etree)
+├── registry.py        # FormatRegistry (확장자→파서, 포맷명→Writer 매핑, thread-safe singleton)
+├── styles.py          # Shared heading patterns
+├── hwp/
+│   ├── __init__.py    # re-export HwpParser + low-level types
+│   ├── parser.py      # HWP v5 binary parser (olefile) — orchestration
+│   ├── records.py     # Binary record parsing (Record, RecordCursor, constants)
+│   ├── text.py        # Character scanning & text extraction (CharInfo, BSTR)
+│   └── tables.py      # 3-phase table extraction
+├── hwpx/
+│   ├── __init__.py    # re-export HwpxParser
+│   └── parser.py      # HWPX parser (zipfile + xml.etree)
 └── writers/
     └── markdown.py    # Markdown writer
 ```
 
 ### Key modules
 
-- **`protocols.py`** — `Parser` and `Writer` Protocol classes. No inheritance needed; just match the static method signatures (`extensions()`, `parse()` / `format_name()`, `write()`).
-- **`registry.py`** — `FormatRegistry` maps file extensions to parsers and format names to writers. Singleton via `get_registry()`. Auto-registers built-in parsers/writers on first access.
-- **`models.py`** — Shared document model. `Document` contains `list[DocumentElement]` and `Metadata`. Element types: `Paragraph`, `Table`, `Image`, `ListItem`, `Link`, `HorizontalRule`.
-- **`parsers/hwp.py`** — HWP v5 binary parser using `olefile`. Uses `RecordCursor` for record traversal, `scan_para_chars()` for unified character scanning, and 3-phase table parsing (`_find_table_ctrl` → `_read_table_dimensions` → `_collect_table_cells`).
-- **`parsers/hwpx.py`** — HWPX (ZIP+XML) parser using stdlib `xml.etree`. Namespace-agnostic with `_strip_ns()` / `_children()` utilities.
-- **`writers/markdown.py`** — Converts `Document` to Markdown. Tables become pipe-format with `<br>` for multi-line cells.
+- **`protocols.py`** — `Parser` / `Writer` Protocol. No inheritance needed; match static method signatures.
+- **`registry.py`** — `FormatRegistry` maps extensions→parsers, format names→writers. Thread-safe singleton via `get_registry()`.
+- **`models.py`** — Shared document model. `Document` = `list[DocumentElement]` + `Metadata`. `ParseError` for parser failures.
+- **`hwp/`** — HWP v5 binary parser split into `records.py` (record stream), `text.py` (char extraction), `tables.py` (table parsing), `parser.py` (orchestration).
+- **`hwpx/parser.py`** — HWPX (ZIP+XML) parser using stdlib `xml.etree`.
+- **`writers/markdown.py`** — Converts `Document` to Markdown. Groups consecutive `ListItem`s into single blocks.
 
-### Library usage (from external projects)
+### Library usage
 
 ```python
-# Direct import
-from docparser.parsers.hwp import HwpParser
-from docparser.writers.markdown import MarkdownWriter
+from ureca_document_parser.hwp import HwpParser
+from ureca_document_parser.writers.markdown import MarkdownWriter
 doc = HwpParser.parse("document.hwp")
 md = MarkdownWriter.write(doc)
 
-# Registry auto-routing
-from docparser import get_registry
-doc = get_registry().parse("document.hwp")
-md = get_registry().write(doc, "markdown")
-
-# One-line conversion
-from docparser import convert
+from ureca_document_parser import convert
 convert("document.hwp", "output.md")
+
+from ureca_document_parser import convert_to_chunks
+chunks = convert_to_chunks("document.hwp", chunk_size=1000, chunk_overlap=200)
 ```
 
-## HWP Binary Format Notes
+## Testing
 
-- Records have a 4-byte header: tag (10 bits), level (10 bits), size (12 bits). If size == 0xFFF (`EXTENDED_SIZE_SENTINEL`), next 4 bytes hold actual size.
-- Key tags: `HWPTAG_PARA_HEADER`=66, `HWPTAG_PARA_TEXT`=67, `HWPTAG_CTRL_HEADER`=71, `HWPTAG_LIST_HEADER`=72, `HWPTAG_TABLE`=77.
-- PARA_TEXT contains UTF-16LE text. Extended control chars (`EXTENDED_CTRL_CHARS`: codes 0-8, 11-12, 14-23) occupy 16 bytes; inline chars (`CHAR_TAB`=9, `CHAR_LINE_BREAK`=10, `CHAR_PARAGRAPH_END`=13) occupy 2 bytes.
-- Table parsing: detect `CHAR_TABLE_OBJECT` (11) → find CTRL_HEADER with `CTRL_TABLE_ID` → read TABLE record for dimensions → collect cell text from LIST_HEADER/PARA_TEXT.
-- 1×1 tables are treated as text wrappers and unwrapped to plain paragraphs.
+```bash
+uv run pytest tests/ -v              # run all tests
+uv run pytest tests/ --cov           # with coverage
+```
+
+Tests cover: models, registry, CLI, HWP parser (unit + integration), HWPX parser, Markdown writer.
 
 ## Adding New Formats
 
-See `docs/adding-formats.md`. In short: create a parser/writer class matching the Protocol, register it in `registry.py:_auto_register()`.
+See `docs/adding-formats.md`. Create a parser/writer class matching the Protocol, register in `registry.py:_auto_register()`.
 
 ## Dependencies
 
-Core: `olefile` (BSD) only. `lxml` removed (hwpx.py uses stdlib `xml.etree`). Optional: `pymupdf` (PDF), `pillow`+`pytesseract` (OCR).
+Core: `olefile` (BSD). Optional: `langchain-text-splitters`+`langchain-core` (chunking), `pymupdf` (PDF), `pillow`+`pytesseract` (OCR). Dev: `pytest`, `pytest-cov`, `mypy`, `ruff`.
+
+## CI
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to main: tests on Python 3.12 + 3.13, plus ruff lint/format checks.

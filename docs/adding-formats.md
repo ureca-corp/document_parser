@@ -4,12 +4,12 @@
 
 ## 새 Parser 추가
 
-### 1. 파서 모듈 생성
+### 1. 파서 패키지 생성
 
-`src/docparser/parsers/` 아래에 새 파일을 만든다.
+`src/ureca_document_parser/` 아래에 확장자명 디렉토리를 만들고 `parser.py`를 생성한다.
 
 ```python
-# src/docparser/parsers/pdf.py
+# src/ureca_document_parser/pdf/parser.py
 """PDF format parser."""
 
 from __future__ import annotations
@@ -46,6 +46,15 @@ class PdfParser:
         return parse_pdf(filepath)
 ```
 
+`__init__.py`에서 re-export한다:
+
+```python
+# src/ureca_document_parser/pdf/__init__.py
+from .parser import PdfParser
+
+__all__ = ["PdfParser"]
+```
+
 핵심 규칙:
 - `protocols.py`의 `Parser` Protocol 시그니처를 따른다
 - `models.py`의 `Document`를 반환한다
@@ -53,14 +62,14 @@ class PdfParser:
 
 ### 2. 레지스트리에 등록
 
-`src/docparser/registry.py`의 `_auto_register()` 함수에 추가한다.
+`src/ureca_document_parser/registry.py`의 `_auto_register()` 함수에 추가한다.
 
 ```python
 def _auto_register(registry: FormatRegistry) -> None:
     # ... 기존 파서들 ...
 
     try:
-        from .parsers.pdf import PdfParser
+        from .pdf import PdfParser
         registry.register_parser(PdfParser)
     except ImportError:
         pass  # pymupdf 미설치 시 건너뜀
@@ -71,7 +80,7 @@ def _auto_register(registry: FormatRegistry) -> None:
 ```toml
 [project.optional-dependencies]
 pdf = ["pymupdf>=1.24"]
-all = ["docparser[pdf,ocr]"]  # all에도 추가
+all = ["ureca_document_parser[pdf,ocr]"]  # all에도 추가
 ```
 
 ### 완료
@@ -79,11 +88,11 @@ all = ["docparser[pdf,ocr]"]  # all에도 추가
 이제 다음이 자동으로 동작한다:
 
 ```python
-from docparser import get_registry
+from ureca_document_parser import get_registry
 doc = get_registry().parse("document.pdf")
 
 # CLI
-docparser document.pdf -o output.md
+ureca_document_parser document.pdf -o output.md
 ```
 
 ---
@@ -92,10 +101,10 @@ docparser document.pdf -o output.md
 
 ### 1. Writer 모듈 생성
 
-`src/docparser/writers/` 아래에 새 파일을 만든다.
+`src/ureca_document_parser/writers/` 아래에 새 파일을 만든다.
 
 ```python
-# src/docparser/writers/html.py
+# src/ureca_document_parser/writers/html.py
 """HTML writer."""
 
 from __future__ import annotations
@@ -156,11 +165,11 @@ except ImportError:
 ### 완료
 
 ```python
-from docparser import get_registry
+from ureca_document_parser import get_registry
 md = get_registry().write(doc, "html")
 
 # CLI
-docparser document.hwp -f html -o output.html
+ureca_document_parser document.hwp -f html -o output.html
 ```
 
 ---

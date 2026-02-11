@@ -1,0 +1,64 @@
+site_name: ureca_document_parser
+site_description: Multi-format document parser and converter (HWP, HWPX → Markdown)
+site_url: https://ureca-team.github.io/document_parser/
+repo_url: https://github.com/ureca-team/document_parser
+repo_name: ureca-team/document_parser
+
+theme:
+  name: material
+  language: ko
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: 다크 모드로 전환
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: 라이트 모드로 전환
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            show_source: true
+            show_root_heading: true
+            heading_level: 2
+            members_order: source
+            docstring_style: google
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - toc:
+      permalink: true
+
+nav:
+  - 홈: index.md
+  - 시작하기: getting-started.md
+  - 가이드:
+      - 아키텍처: architecture.md
+      - 포맷 확장: adding-formats.md
+  - API 레퍼런스:
+      - 개요: api/index.md
+      - Document 모델: api/models.md
+      - 파서 (HWP/HWPX): api/parsers.md
+      - Writer: api/writers.md
+      - FormatRegistry: api/registry.md
