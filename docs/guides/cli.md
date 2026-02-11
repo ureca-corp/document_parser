@@ -33,6 +33,16 @@ uv run ureca_document_parser 보고서.hwp > 출력.md
 
 ## 옵션
 
+### 명령줄 옵션 요약
+
+| 옵션 | 설명 | 예시 |
+|------|------|------|
+| `input_file` | 변환할 입력 파일 경로 (필수) | `보고서.hwp` |
+| `-o`, `--output` | 출력 파일 경로 (미지정 시 표준 출력) | `-o 보고서.md` |
+| `-f`, `--format` | 출력 형식 (기본값: `markdown`) | `-f markdown` |
+| `--list-formats` | 지원하는 입력/출력 형식 목록 출력 | `--list-formats` |
+| `--help` | 도움말 메시지 출력 | `--help` |
+
 ### 출력 포맷 지정
 
 `-f` 또는 `--format` 옵션으로 출력 포맷을 지정할 수 있어요. 현재는 `markdown`만 지원해요.

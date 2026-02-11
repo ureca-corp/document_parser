@@ -48,6 +48,25 @@ processed = markdown.replace("구버전", "신버전")
 convert("보고서.hwp", "보고서.md", format="markdown")
 ```
 
+## 사용 패턴 요약
+
+`convert()` 함수는 매개변수 조합에 따라 다양한 방식으로 사용할 수 있어요. 상황에 맞는 패턴을 선택하세요.
+
+| 용도 | 코드 예시 | 반환값 |
+|------|----------|--------|
+| **파일로 바로 저장** | `convert("보고서.hwp", "보고서.md")` | `None` |
+| **문자열로 받아서 처리** | `markdown = convert("보고서.hwp")` | `str` (Markdown 텍스트) |
+| **여러 파일 결합** | `md = convert("part1.hwp")`<br>`combined = md + convert("part2.hwp")` | `str` |
+| **파싱 후 조건부 저장** | `md = convert("문서.hwp")`<br>`if "키워드" in md:`<br>`    Path("out.md").write_text(md)` | `str` |
+| **포맷 명시** | `convert("문서.hwp", "문서.md", format="markdown")` | `None` |
+| **디렉토리 자동 생성** | `convert("문서.hwp", "a/b/c/문서.md")` | `None` (경로 자동 생성) |
+
+!!! tip "반환값 타입 구분하기"
+    - `output_path`를 지정하면 → **파일 저장** + `None` 반환
+    - `output_path`를 생략하면 → **문자열 반환** (`str`)
+
+    문자열로 받으면 추가 처리가 가능하고, 파일로 저장하면 코드가 간결해져요.
+
 ## 실전 예시
 
 ### 여러 파일 일괄 변환
