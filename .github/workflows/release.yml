@@ -1,4 +1,4 @@
-name: Create Release
+name: Release and Publish
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write  # OIDC for PyPI trusted publishing
 
 jobs:
   check-version:
@@ -39,14 +40,31 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "New version detected: $VERSION"
 
-  create-release:
+  release-and-publish:
     needs: check-version
     if: needs.check-version.outputs.version-changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # 전체 히스토리 가져오기 (릴리즈 노트 생성용)
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run tests
+        run: uv run pytest tests/ -v
+
+      - name: Build package
+        run: uv build
 
       - name: Create and push tag
         env:
@@ -57,7 +75,7 @@ jobs:
           git tag -a "v${VERSION}" -m "Release v${VERSION}"
           git push origin "v${VERSION}"
 
-      - name: Create GitHub Release with auto-generated notes
+      - name: Create GitHub Release
         env:
           VERSION: ${{ needs.check-version.outputs.new-version }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -65,7 +83,6 @@ jobs:
           gh release create "v${VERSION}" \
             --title "Release v${VERSION}" \
             --generate-notes \
-            --notes-start-tag $(git describe --tags --abbrev=0 v${VERSION}^ 2>/dev/null || echo "") \
             --notes "## 설치
 
           \`\`\`bash
@@ -79,3 +96,8 @@ jobs:
           \`\`\`
 
           📚 [문서](https://ureca-corp.github.io/document_parser/)"
+
+      - name: Publish to PyPI
+        run: uv publish
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
