@@ -1,12 +1,12 @@
-# Adding New Formats
+# 포맷 확장 가이드
 
-새 입력 포맷(Parser)이나 출력 포맷(Writer)을 추가하는 가이드.
+새 입력 포맷(Parser)이나 출력 포맷(Writer)을 추가하는 방법을 안내해요.
 
 ## 새 Parser 추가
 
 ### 1. 파서 패키지 생성
 
-`src/ureca_document_parser/` 아래에 확장자명 디렉토리를 만들고 `parser.py`를 생성한다.
+`src/ureca_document_parser/` 아래에 확장자명 디렉토리를 만들고 `parser.py`를 생성하세요.
 
 ```python
 # src/ureca_document_parser/pdf/parser.py
@@ -46,7 +46,7 @@ class PdfParser:
         return parse_pdf(filepath)
 ```
 
-`__init__.py`에서 re-export한다:
+`__init__.py`에서 re-export해 주세요.
 
 ```python
 # src/ureca_document_parser/pdf/__init__.py
@@ -55,14 +55,15 @@ from .parser import PdfParser
 __all__ = ["PdfParser"]
 ```
 
-핵심 규칙:
-- `protocols.py`의 `Parser` Protocol 시그니처를 따른다
-- `models.py`의 `Document`를 반환한다
-- 선택적 의존성은 **함수 내부에서 lazy import**한다
+핵심 규칙은 다음과 같아요.
+
+- `protocols.py`의 `Parser` Protocol 시그니처를 따라야 해요
+- `models.py`의 `Document`를 반환해야 해요
+- 선택적 의존성은 **함수 내부에서 lazy import**해야 해요
 
 ### 2. 레지스트리에 등록
 
-`src/ureca_document_parser/registry.py`의 `_auto_register()` 함수에 추가한다.
+`src/ureca_document_parser/registry.py`의 `_auto_register()` 함수에 추가하세요.
 
 ```python
 def _auto_register(registry: FormatRegistry) -> None:
@@ -75,7 +76,7 @@ def _auto_register(registry: FormatRegistry) -> None:
         pass  # pymupdf 미설치 시 건너뜀
 ```
 
-### 3. (선택) pyproject.toml에 optional dependency 추가
+### 3. pyproject.toml에 optional dependency 추가 (선택)
 
 ```toml
 [project.optional-dependencies]
@@ -85,12 +86,14 @@ all = ["ureca_document_parser[pdf,ocr]"]  # all에도 추가
 
 ### 완료
 
-이제 다음이 자동으로 동작한다:
+이제 다음이 자동으로 동작해요.
 
 ```python
 from ureca_document_parser import get_registry
 doc = get_registry().parse("document.pdf")
+```
 
+```bash
 # CLI
 ureca_document_parser document.pdf -o output.md
 ```
@@ -101,7 +104,7 @@ ureca_document_parser document.pdf -o output.md
 
 ### 1. Writer 모듈 생성
 
-`src/ureca_document_parser/writers/` 아래에 새 파일을 만든다.
+`src/ureca_document_parser/writers/` 아래에 새 파일을 만드세요.
 
 ```python
 # src/ureca_document_parser/writers/html.py
@@ -164,10 +167,14 @@ except ImportError:
 
 ### 완료
 
+이제 다음이 자동으로 동작해요.
+
 ```python
 from ureca_document_parser import get_registry
 md = get_registry().write(doc, "html")
+```
 
+```bash
 # CLI
 ureca_document_parser document.hwp -f html -o output.html
 ```
@@ -176,10 +183,10 @@ ureca_document_parser document.hwp -f html -o output.html
 
 ## 체크리스트
 
-새 포맷 추가 시 확인 사항:
+새 포맷을 추가할 때 다음 사항을 확인하세요.
 
-- [ ] Protocol 시그니처와 호환되는 클래스 작성
-- [ ] `models.py`의 `Document`만 사용하여 입출력
-- [ ] `registry.py:_auto_register()`에 `try/except ImportError`로 등록
-- [ ] 선택적 의존성은 `pyproject.toml`의 `[project.optional-dependencies]`에 추가
-- [ ] lazy import 사용 (함수 내부에서 import)
+- [ ] Protocol 시그니처와 호환되는 클래스를 작성했나요?
+- [ ] `models.py`의 `Document`만 사용해서 입출력하나요?
+- [ ] `registry.py`의 `_auto_register()`에 `try/except ImportError`로 등록했나요?
+- [ ] 선택적 의존성을 `pyproject.toml`의 `[project.optional-dependencies]`에 추가했나요?
+- [ ] lazy import를 사용하고 있나요? (함수 내부에서 import)

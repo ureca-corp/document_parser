@@ -1,14 +1,14 @@
 # ureca_document_parser
 
-**Multi-format document parser and converter** — 한국어 워드프로세서(아래한글) HWP/HWPX 파일을 Markdown으로 변환합니다.
+한국어 워드프로세서(아래한글) HWP/HWPX 파일을 Markdown으로 변환하는 현대적인 문서 파서예요.
 
 ## 주요 기능
 
-- **HWP v5 바이너리 파싱** — `olefile` 기반, 텍스트·표·이미지 추출
-- **HWPX (OOXML) 파싱** — ZIP+XML 구조, 표준 라이브러리만 사용
-- **Markdown 출력** — 헤딩, 리스트, 테이블 등 구조 보존
-- **LangChain 연동** — RAG 파이프라인용 청크 분할 지원
-- **확장 가능한 아키텍처** — Protocol 기반 파서/Writer 등록
+- **HWP v5 바이너리 파싱** — `olefile` 기반으로 텍스트, 표, 이미지를 추출해요
+- **HWPX (OOXML) 파싱** — ZIP+XML 구조를 표준 라이브러리만으로 처리해요
+- **Markdown 출력** — 헤딩, 리스트, 테이블 등 문서 구조를 보존해요
+- **LangChain 연동** — RAG 파이프라인용 청크 분할을 지원해요
+- **확장 가능한 아키텍처** — Protocol 기반으로 새 파서/Writer를 쉽게 등록할 수 있어요
 
 ## 퀵스타트
 

@@ -1,6 +1,6 @@
 # Document 모델
 
-파서와 Writer가 공유하는 중간 표현(IR) 데이터 모델입니다. 모든 파서는 `Document`를 생산하고, 모든 Writer는 `Document`를 소비합니다.
+파서와 Writer가 공유하는 중간 표현(IR) 데이터 모델이에요. 모든 파서는 `Document`를 생산하고, 모든 Writer는 `Document`를 소비해요.
 
 ```
 Document
