@@ -1,0 +1,62 @@
+# ureca_document_parser
+
+> 한국어 워드프로세서(HWP/HWPX) 및 PDF 파일을 Markdown 또는 LangChain Document 청크로 변환하는 다중 포맷 문서 파서
+
+## API
+
+핵심 함수는 `convert()` 하나예요. 파일 변환, 문자열 반환, LangChain 청크 생성을 모두 처리해요.
+
+```python
+from ureca_document_parser import convert
+
+def convert(
+    input_path: str | Path,
+    output_path: str | Path | None = None,
+    *,
+    format: str = "markdown",
+    chunks: bool = False,
+    chunk_size: int = 1000,
+    chunk_overlap: int = 200,
+) -> str | list[LCDocument] | None: ...
+```
+
+### 파일로 저장
+
+```python
+convert("보고서.hwp", "보고서.md")
+```
+
+### 문자열로 반환
+
+```python
+markdown = convert("보고서.hwp")
+```
+
+### LangChain 청크로 변환 (RAG)
+
+```python
+chunks = convert("보고서.hwp", chunks=True, chunk_size=1000, chunk_overlap=200)
+```
+
+설치: `uv add ureca_document_parser` (LangChain 연동: `uv add ureca_document_parser[langchain]`)
+
+## Docs
+
+- [홈](https://ureca-corp.github.io/document_parser/): 퀵스타트, 주요 기능, 지원 포맷
+- [설치](https://ureca-corp.github.io/document_parser/installation/): 기본 설치부터 선택적 의존성까지
+- [Python API 사용법](https://ureca-corp.github.io/document_parser/guides/python-api/): 코드에서 파서 활용하기
+- [CLI 사용법](https://ureca-corp.github.io/document_parser/guides/cli/): 명령줄에서 파일 변환하기
+- [LangChain 연동](https://ureca-corp.github.io/document_parser/guides/langchain/): RAG 파이프라인 구축하기
+- [고급 사용법](https://ureca-corp.github.io/document_parser/guides/advanced/): Document 모델 직접 다루기
+- [API 레퍼런스](https://ureca-corp.github.io/document_parser/api-reference/): 전체 API 문서
+
+## Formats
+
+- [HWP](https://ureca-corp.github.io/document_parser/formats/hwp/): 아래한글 v5 바이너리 형식
+- [HWPX](https://ureca-corp.github.io/document_parser/formats/hwpx/): 아래한글 OOXML 형식 (ZIP+XML)
+- [PDF](https://ureca-corp.github.io/document_parser/formats/pdf/): Portable Document Format
+
+## Optional
+
+- [내부 아키텍처](https://ureca-corp.github.io/document_parser/reference/architecture/): 파이프라인, 모듈 의존성, 구현 세부사항
+- [새 파서/Writer 추가](https://ureca-corp.github.io/document_parser/reference/extending/): 포맷 확장 가이드
