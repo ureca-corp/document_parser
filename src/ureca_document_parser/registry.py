@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import threading
 from pathlib import Path
-from typing import Any
 
 from .models import Document
+from .protocols import Parser, Writer
 
 
 class FormatRegistry:
@@ -16,16 +17,16 @@ class FormatRegistry:
     """
 
     def __init__(self) -> None:
-        self._parsers: dict[str, Any] = {}   # ext -> Parser class
-        self._writers: dict[str, Any] = {}   # format_name -> Writer class
+        self._parsers: dict[str, type[Parser]] = {}
+        self._writers: dict[str, type[Writer]] = {}
 
-    def register_parser(self, cls: Any) -> None:
-        """Register a parser class. Must have extensions() and parse() methods."""
+    def register_parser(self, cls: type[Parser]) -> None:
+        """Register a parser class. Must satisfy the Parser protocol."""
         for ext in cls.extensions():
             self._parsers[ext.lower()] = cls
 
-    def register_writer(self, cls: Any) -> None:
-        """Register a writer class. Must have format_name() and write() methods."""
+    def register_writer(self, cls: type[Writer]) -> None:
+        """Register a writer class. Must satisfy the Writer protocol."""
         self._writers[cls.format_name().lower()] = cls
 
     def parse(self, filepath: Path | str) -> Document:
@@ -62,35 +63,43 @@ class FormatRegistry:
 
 
 _registry: FormatRegistry | None = None
+_registry_lock = threading.Lock()
 
 
 def get_registry() -> FormatRegistry:
     """Get the global format registry (singleton, lazily initialized)."""
     global _registry
-    if _registry is None:
-        _registry = FormatRegistry()
-        _auto_register(_registry)
+    if _registry is not None:
+        return _registry
+    with _registry_lock:
+        if _registry is None:
+            registry = FormatRegistry()
+            _auto_register(registry)
+            _registry = registry
     return _registry
+
+
+def _reset_registry() -> None:
+    """Reset the global registry. Intended for testing only."""
+    global _registry
+    with _registry_lock:
+        _registry = None
 
 
 def _auto_register(registry: FormatRegistry) -> None:
     """Auto-discover and register all built-in parsers and writers."""
-    # Parsers
-    try:
-        from .parsers.hwp import HwpParser
-        registry.register_parser(HwpParser)
-    except ImportError:
-        pass
+    from .hwp import HwpParser
+    from .hwpx import HwpxParser
+    from .writers.markdown import MarkdownWriter
 
-    try:
-        from .parsers.hwpx import HwpxParser
-        registry.register_parser(HwpxParser)
-    except ImportError:
-        pass
+    registry.register_parser(HwpParser)
+    registry.register_parser(HwpxParser)
+    registry.register_writer(MarkdownWriter)
 
-    # Writers
+    # Optional parsers (require extra dependencies)
     try:
-        from .writers.markdown import MarkdownWriter
-        registry.register_writer(MarkdownWriter)
+        from .pdf import PdfParser  # type: ignore[import-not-found]
+
+        registry.register_parser(PdfParser)
     except ImportError:
         pass

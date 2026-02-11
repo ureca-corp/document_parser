@@ -1,9 +1,9 @@
-"""Command-line interface for docparser.
+"""Command-line interface for ureca_document_parser.
 
 Usage:
-    docparser document.hwp -o output.md
-    docparser document.hwpx -f markdown -o output.md
-    docparser --list-formats
+    ureca_document_parser document.hwp -o output.md
+    ureca_document_parser document.hwpx -f markdown -o output.md
+    ureca_document_parser --list-formats
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ def main() -> None:
     registry = get_registry()
 
     parser = argparse.ArgumentParser(
-        prog="docparser",
+        prog="ureca_document_parser",
         description="문서 파일을 다양한 형식으로 변환합니다.",
     )
     parser.add_argument(
@@ -28,11 +28,13 @@ def main() -> None:
         help="변환할 입력 파일 경로",
     )
     parser.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         help="출력 파일 경로 (미지정 시 stdout 출력)",
     )
     parser.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         default="markdown",
         help="출력 형식 (기본값: markdown)",
     )

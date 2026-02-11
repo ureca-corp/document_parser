@@ -4,3 +4,7 @@ __pycache__
 *.lock
 dist
 *.log
+
+.ruff_cache/
+.pytest_cache/
+site/

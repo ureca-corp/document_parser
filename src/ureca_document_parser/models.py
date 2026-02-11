@@ -17,7 +17,7 @@ class Paragraph:
 
 @dataclass
 class TableCell:
-    paragraphs: list[Paragraph] = field(default_factory=list)
+    content: list[Paragraph | Table] = field(default_factory=list)
 
 
 @dataclass
