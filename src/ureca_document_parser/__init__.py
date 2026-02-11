@@ -31,7 +31,6 @@ __version__ = version("ureca_document_parser")
 __all__ = [
     # Main API
     "convert",
-
     # Exceptions
     "ParseError",
 ]
