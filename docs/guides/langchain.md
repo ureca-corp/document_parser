@@ -10,7 +10,7 @@ LangChain 기능을 사용하려면 추가 의존성이 필요해요.
 uv add "ureca_document_parser[langchain]"
 ```
 
-이렇게 하면 [langchain-text-splitters](https://python.langchain.com/docs/how_to/recursive_text_splitter/)와 [langchain-core](https://python.langchain.com/docs/versions/v0_3/)가 함께 설치돼요.
+이렇게 하면 [langchain-text-splitters](https://python.langchain.com/docs/how_to/recursive_text_splitter/)와 [langchain-core](https://python.langchain.com/docs/concepts/langchain_core/)가 함께 설치돼요.
 
 ## LangChain 청크로 변환하기
 
@@ -116,13 +116,14 @@ embeddings = OpenAIEmbeddings()
 vectorstore = Chroma.from_documents(documents=all_chunks, embedding=embeddings)
 ```
 
-### RAG 체인 구축하기
+### RAG 에이전트 구축하기
 
 ```python
 from ureca_document_parser import convert
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_chroma import Chroma
-from langchain.chains import RetrievalQA
+from langchain.agents import create_agent
+from langchain.tools import tool
 
 # 1. 문서 로드 및 청크 생성
 chunks = convert("보고서.hwp", chunks=True)
@@ -131,17 +132,30 @@ chunks = convert("보고서.hwp", chunks=True)
 embeddings = OpenAIEmbeddings()
 vectorstore = Chroma.from_documents(documents=chunks, embedding=embeddings)
 
-# 3. RAG 체인 구축
-llm = ChatOpenAI(model="gpt-4")
-qa_chain = RetrievalQA.from_chain_type(
-    llm=llm,
-    chain_type="stuff",
-    retriever=vectorstore.as_retriever(search_kwargs={"k": 3}),
+# 3. 검색 도구 정의
+@tool(response_format="content_and_artifact")
+def retrieve_context(query: str):
+    """문서에서 질문과 관련된 정보를 검색해요."""
+    retrieved_docs = vectorstore.similarity_search(query, k=3)
+    serialized = "\n\n".join(
+        f"Source: {doc.metadata}\nContent: {doc.page_content}"
+        for doc in retrieved_docs
+    )
+    return serialized, retrieved_docs
+
+# 4. RAG 에이전트 생성
+llm = ChatOpenAI(model="gpt-4o")
+agent = create_agent(
+    llm,
+    tools=[retrieve_context],
+    system_prompt="검색 도구를 사용해서 문서 내용을 기반으로 질문에 답변하세요.",
 )
 
-# 4. 질문하기
-response = qa_chain.invoke("프로젝트의 주요 목표는 무엇인가요?")
-print(response["result"])
+# 5. 질문하기
+response = agent.invoke(
+    {"messages": [{"role": "user", "content": "프로젝트의 주요 목표는 무엇인가요?"}]}
+)
+print(response["messages"][-1].content)
 ```
 
 ### 메타데이터 활용하기
@@ -246,7 +260,9 @@ vectorstore = FAISS.from_documents(chunks, embeddings)
 vectorstore.save_local("faiss_index")
 
 # 나중에 로드
-vectorstore = FAISS.load_local("faiss_index", embeddings)
+vectorstore = FAISS.load_local(
+    "faiss_index", embeddings, allow_dangerous_deserialization=True
+)
 ```
 
 ## 성능 최적화
