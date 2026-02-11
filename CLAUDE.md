@@ -71,7 +71,7 @@ uv run pytest tests/ --cov           # 커버리지 포함
 
 ## 포맷 확장
 
-`docs/adding-formats.md` 참고. Protocol에 맞는 파서/Writer 클래스를 작성하고 `registry.py:_auto_register()`에 등록한다.
+`docs/reference/extending.md` 참고. Protocol에 맞는 파서/Writer 클래스를 작성하고 `registry.py:_auto_register()`에 등록한다.
 
 ## 의존성
 
@@ -84,15 +84,19 @@ uv run pytest tests/ --cov           # 커버리지 포함
 ```
 docs/
 ├── index.md              # 홈 — 퀵스타트, 주요 기능
-├── getting-started.md    # 설치, CLI, Python API 사용법
-├── architecture.md       # 파이프라인, 모듈 의존성, Mermaid 다이어그램
-├── adding-formats.md     # 새 파서/Writer 추가 가이드 (기여자용)
-└── api/
-    ├── index.md          # API 개요 + 최상위 API (mkdocstrings 자동 생성)
-    ├── models.md         # Document 모델 (mkdocstrings 자동 생성)
-    ├── parsers.md        # HWP/HWPX 파서 (mkdocstrings 자동 생성)
-    ├── writers.md        # Markdown Writer (mkdocstrings 자동 생성)
-    └── registry.md       # FormatRegistry + Protocol (mkdocstrings 자동 생성)
+├── installation.md       # 설치 방법 (기본 + 선택적 의존성)
+├── formats/              # 포맷별 상세 가이드
+│   ├── hwp.md           # HWP 포맷 (개요 + 파일 구조 + 사용 예시)
+│   └── hwpx.md          # HWPX 포맷 (개요 + 파일 구조 + 사용 예시)
+├── guides/               # 사용 가이드
+│   ├── cli.md           # CLI 사용법
+│   ├── python-api.md    # Python API 기본 사용법
+│   ├── langchain.md     # LangChain 연동 (RAG)
+│   └── advanced.md      # 고급 사용법 (Document 모델 직접 다루기)
+├── api-reference.md     # API 레퍼런스 (convert, convert_to_chunks, get_registry 등, mkdocstrings 자동 생성)
+└── reference/            # 기술 참조 (기여자용)
+    ├── architecture.md  # 내부 아키텍처 (파이프라인, 모듈 의존성, 구현 세부사항)
+    └── extending.md     # 새 파서/Writer 추가 가이드
 ```
 
 ### 작성 규칙
@@ -103,8 +107,8 @@ docs/
 - CLI 예제는 반드시 `uv run ureca_document_parser ...` 형태로 작성한다.
 - 예제 파일명은 실제 사용 시나리오 기반 (예: `보고서.hwp`, `제안서.hwpx`)
 - 외부 의존성을 언급할 때는 **이름에 공식문서 링크**를 걸고, 바로 아래에 `uv add` 코드블록을 넣는다.
-- `docs/api/` 하위 파일은 `mkdocstrings`가 docstring에서 자동 생성하므로 설명문만 작성한다.
-- `docs/adding-formats.md`만 기여자(contributor) 관점으로 작성한다.
+- `api-reference.md`는 `mkdocstrings`가 docstring에서 자동 생성하므로 최소한의 설명만 작성한다.
+- `docs/reference/` 하위 문서는 기여자(contributor) 또는 깊이 있는 이해가 필요한 사용자 관점으로 작성한다.
 - Mermaid 다이어그램 사용 가능 (mkdocs.yml에 설정 완료)
 - MkDocs admonition 사용 가능: `!!! note`, `!!! info`, `!!! warning`
 
