@@ -11,6 +11,25 @@
       heading_level: 3
       show_source: false
 
+### 매개변수
+
+| 매개변수 | 타입 | 기본값 | 설명 |
+|---------|------|--------|------|
+| `input_path` | `str \| Path` | (필수) | 변환할 입력 파일 경로 (.hwp, .hwpx, .pdf) |
+| `output_path` | `str \| Path \| None` | `None` | 출력 파일 경로. `None`이면 문자열로 반환. `chunks=True`면 무시됨 |
+| `format` | `str` | `"markdown"` | 출력 포맷 이름 |
+| `chunks` | `bool` | `False` | `True`면 LangChain Document 청크로 반환 (`langchain` 추가 의존성 필요) |
+| `chunk_size` | `int` | `1000` | 각 청크의 최대 문자 수 (`chunks=True`일 때만 사용) |
+| `chunk_overlap` | `int` | `200` | 인접 청크 간 중복 문자 수 (`chunks=True`일 때만 사용) |
+
+### 반환값
+
+| 상황 | 반환 타입 | 설명 |
+|------|----------|------|
+| `chunks=True` | `list[LCDocument]` | LangChain Document 청크 리스트 |
+| `chunks=False`, `output_path=None` | `str` | 변환된 Markdown 문자열 |
+| `chunks=False`, `output_path` 지정 | `None` | 파일에 저장됨 |
+
 ### 사용 예시
 
 **1. 파일로 저장**
