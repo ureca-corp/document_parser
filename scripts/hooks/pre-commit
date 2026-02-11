@@ -1,0 +1,29 @@
+#!/bin/bash
+# Git pre-commit hook - Runs ruff check before allowing commit
+
+echo "🔍 Running ruff check on staged Python files..."
+
+# Get list of staged Python files
+PYTHON_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.pyi?$' || true)
+
+if [ -z "$PYTHON_FILES" ]; then
+    echo "✓ No Python files to check"
+    exit 0
+fi
+
+echo "Checking files:"
+echo "$PYTHON_FILES" | sed 's/^/  - /'
+
+# Run ruff check on staged files
+if uv run ruff check $PYTHON_FILES; then
+    echo "✓ Ruff check passed!"
+    exit 0
+else
+    echo ""
+    echo "❌ Ruff check failed!"
+    echo ""
+    echo "Fix the errors above or:"
+    echo "  - Run: uv run ruff check --fix src/"
+    echo "  - Skip check: git commit --no-verify"
+    exit 1
+fi

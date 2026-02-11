@@ -122,12 +122,30 @@ git clone https://github.com/ureca-corp/document_parser.git
 cd document_parser
 uv sync --extra dev
 
+# Git hooks 설치 (린트 자동 검사)
+./scripts/setup-hooks.sh
+
 # 테스트 실행
 uv run pytest tests/ -v
 
 # 문서 미리보기
 uv sync --extra docs
 uv run mkdocs serve
+```
+
+### Git Hooks
+
+프로젝트는 커밋 전 자동 린트 검사를 위한 Git hooks를 제공해요:
+
+```bash
+# Hooks 설치
+./scripts/setup-hooks.sh
+
+# 설치 후 커밋 시 자동으로 ruff check 실행
+git commit -m "message"  # → 자동으로 린트 검사
+
+# 필요시 우회 (권장하지 않음)
+git commit --no-verify -m "message"
 ```
 
 ## 라이선스
