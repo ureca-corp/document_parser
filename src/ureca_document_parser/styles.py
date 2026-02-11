@@ -22,10 +22,10 @@ HEADING_STYLE_PATTERNS: dict[str, int] = {
     "개요 4": 4,
     "개요 5": 5,
     "개요 6": 6,
-    "제목": 1,
     "부제목": 2,
-    "title": 1,
     "subtitle": 2,
+    "제목": 1,
+    "title": 1,
 }
 
 
