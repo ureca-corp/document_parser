@@ -82,6 +82,61 @@ See `docs/adding-formats.md`. Create a parser/writer class matching the Protocol
 
 Core: `olefile` (BSD). Optional: `langchain-text-splitters`+`langchain-core` (chunking), `pymupdf` (PDF), `pillow`+`pytesseract` (OCR). Dev: `pytest`, `pytest-cov`, `mypy`, `ruff`.
 
+## Documentation
+
+### Structure
+
+```
+docs/
+├── index.md              # 홈 — 퀵스타트, 주요 기능
+├── getting-started.md    # 설치, CLI, Python API 사용법
+├── architecture.md       # 파이프라인, 모듈 의존성, Mermaid 다이어그램
+├── adding-formats.md     # 새 Parser/Writer 추가 가이드 (기여자용)
+└── api/
+    ├── index.md          # API 개요 + 최상위 API (mkdocstrings 자동 생성)
+    ├── models.md         # Document 모델 (mkdocstrings 자동 생성)
+    ├── parsers.md        # HWP/HWPX 파서 (mkdocstrings 자동 생성)
+    ├── writers.md        # Markdown Writer (mkdocstrings 자동 생성)
+    └── registry.md       # FormatRegistry + Protocol (mkdocstrings 자동 생성)
+```
+
+### Writing style
+
+- 말투: es-toolkit 스타일 친근한 존댓말 (`~예요`, `~해요`, `~돼요`)
+- 관점: **외부 프로젝트에 설치해서 쓰는 사용자** 기준. 내부 소스코드를 복붙하지 않는다.
+- CLI 예제는 반드시 `uv run ureca_document_parser ...` 형태로 작성한다.
+- 예제 파일명은 실제 사용 시나리오 기반 (예: `보고서.hwp`, `제안서.hwpx`)
+- `docs/api/` 하위 파일은 `mkdocstrings`가 docstring에서 자동 생성하므로 설명문만 작성한다.
+- `docs/adding-formats.md`만 기여자(contributor) 관점으로 작성한다.
+- Mermaid 다이어그램 사용 가능 (mkdocs.yml에 설정 완료)
+- MkDocs admonition 사용 가능: `!!! note`, `!!! info`, `!!! warning`
+
+### Build & preview
+
+```bash
+uv sync --extra docs                    # 문서 의존성 설치
+uv run mkdocs serve                     # http://127.0.0.1:8000 로컬 미리보기
+uv run mkdocs build                     # site/ 디렉토리에 정적 파일 빌드
+```
+
+### Deploy
+
+배포는 자동이다. `main` 브랜치에 push하면 `.github/workflows/docs.yml`이 실행되어 GitHub Pages에 배포된다.
+
+- 워크플로우: `mkdocs gh-deploy --force` → `gh-pages` 브랜치에 push
+- Pages 설정: Source = `gh-pages` branch (GitHub Settings → Pages)
+- URL: https://ureca-corp.github.io/document_parser/
+
+수동 배포가 필요한 경우:
+
+```bash
+uv run mkdocs gh-deploy --force
+```
+
+### Navigation
+
+페이지를 추가/삭제하면 `mkdocs.yml`의 `nav:` 섹션을 함께 수정해야 한다.
+
 ## CI
 
 GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to main: tests on Python 3.12 + 3.13, plus ruff lint/format checks.
