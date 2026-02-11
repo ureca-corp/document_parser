@@ -108,7 +108,7 @@ def _process_element(element: ET.Element, elements: list[Paragraph | Table]) -> 
             elements.append(para)
         # 문단 내부의 서브 테이블도 처리
         for child in element:
-            if _strip_ns(child) in ("tbl", "subList"):
+            if _strip_ns(child.tag) in ("tbl", "subList"):
                 _process_element(child, elements)
         return
 
