@@ -60,6 +60,7 @@ nav:
   - 포맷:
       - HWP: formats/hwp.md
       - HWPX: formats/hwpx.md
+      - PDF: formats/pdf.md
   - 가이드:
       - CLI 사용법: guides/cli.md
       - Python API: guides/python-api.md

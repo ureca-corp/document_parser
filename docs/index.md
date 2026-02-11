@@ -1,11 +1,12 @@
 # ureca_document_parser
 
-한국어 워드프로세서(아래한글) 문서를 Markdown으로 변환하는 다중 포맷 파서예요.
+다양한 문서 포맷(HWP, HWPX, PDF)을 Markdown으로 변환하는 다중 포맷 파서예요.
 
 ## 주요 기능
 
 - **HWP v5 바이너리 파싱** — 텍스트, 표, 헤딩 구조를 추출해요
 - **HWPX (OOXML) 파싱** — ZIP+XML 기반의 최신 한글 포맷을 지원해요
+- **PDF 파싱** — pymupdf를 사용한 텍스트 추출을 지원해요
 - **Markdown 출력** — 헤딩, 리스트, 테이블 등 문서 구조를 보존해요
 - **LangChain 연동** — RAG 파이프라인에 바로 연결할 수 있어요
 
@@ -50,6 +51,7 @@ chunks = convert("보고서.hwp", chunks=True, chunk_size=1000, chunk_overlap=20
 |----------|------|------|
 | **HWP** | 아래한글 v5 바이너리 형식 (2007 이후) | [자세히 보기](formats/hwp.md) |
 | **HWPX** | 아래한글 OOXML 형식 (ZIP+XML) | [자세히 보기](formats/hwpx.md) |
+| **PDF** | Portable Document Format (pymupdf 필요) | [자세히 보기](formats/pdf.md) |
 
 | 출력 포맷 | 설명 |
 |----------|------|
