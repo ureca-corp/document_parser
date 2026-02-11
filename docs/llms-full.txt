@@ -1,0 +1,578 @@
+# ureca_document_parser
+
+> 한국어 워드프로세서(HWP/HWPX) 및 PDF 파일을 Markdown 또는 LangChain Document 청크로 변환하는 다중 포맷 문서 파서
+
+## API
+
+핵심 함수는 `convert()` 하나예요. 파일 변환, 문자열 반환, LangChain 청크 생성을 모두 처리해요.
+
+```python
+from ureca_document_parser import convert
+
+def convert(
+    input_path: str | Path,
+    output_path: str | Path | None = None,
+    *,
+    format: str = "markdown",
+    chunks: bool = False,
+    chunk_size: int = 1000,
+    chunk_overlap: int = 200,
+) -> str | list[LCDocument] | None: ...
+```
+
+### 매개변수
+
+| 매개변수 | 타입 | 기본값 | 설명 |
+|---------|------|--------|------|
+| `input_path` | `str \| Path` | (필수) | 변환할 입력 파일 경로 (.hwp, .hwpx, .pdf) |
+| `output_path` | `str \| Path \| None` | `None` | 출력 파일 경로. `None`이면 문자열로 반환. `chunks=True`면 무시됨 |
+| `format` | `str` | `"markdown"` | 출력 포맷 이름 |
+| `chunks` | `bool` | `False` | `True`면 LangChain Document 청크로 반환 (`langchain` 추가 의존성 필요) |
+| `chunk_size` | `int` | `1000` | 각 청크의 최대 문자 수 (`chunks=True`일 때만 사용) |
+| `chunk_overlap` | `int` | `200` | 인접 청크 간 중복 문자 수 (`chunks=True`일 때만 사용) |
+
+### 반환값
+
+| 상황 | 반환 타입 | 설명 |
+|------|----------|------|
+| `chunks=True` | `list[LCDocument]` | LangChain Document 청크 리스트 |
+| `chunks=False`, `output_path=None` | `str` | 변환된 Markdown 문자열 |
+| `chunks=False`, `output_path` 지정 | `None` | 파일에 저장됨 |
+
+### ParseError
+
+파싱 실패 시 발생하는 예외예요.
+
+```python
+from ureca_document_parser import convert, ParseError
+
+try:
+    convert("손상된파일.hwp", "출력.md")
+except ParseError as e:
+    print(f"파싱 실패: {e}")
+```
+
+## 설치
+
+기본 설치:
+
+```bash
+uv add ureca_document_parser
+```
+
+pip를 사용한다면:
+
+```bash
+pip install ureca_document_parser
+```
+
+### 선택적 의존성
+
+LangChain 청크 분할:
+
+```bash
+uv add "ureca_document_parser[langchain]"
+```
+
+PDF 파싱 (pymupdf):
+
+```bash
+uv add "ureca_document_parser[pdf]"
+```
+
+모든 기능:
+
+```bash
+uv add "ureca_document_parser[all]"
+```
+
+## Python API 사용법
+
+### 파일로 저장
+
+```python
+from ureca_document_parser import convert
+
+convert("보고서.hwp", "output/보고서.md")
+convert("제안서.hwpx", "output/제안서.md")
+```
+
+출력 디렉토리가 없으면 자동으로 생성돼요.
+
+### 문자열로 반환
+
+```python
+from ureca_document_parser import convert
+
+markdown = convert("보고서.hwp")
+print(markdown)
+```
+
+### 출력 포맷 지정
+
+```python
+convert("보고서.hwp", "보고서.md", format="markdown")
+```
+
+### 사용 패턴 요약
+
+| 용도 | 코드 예시 | 반환값 |
+|------|----------|--------|
+| 파일로 바로 저장 | `convert("보고서.hwp", "보고서.md")` | `None` |
+| 문자열로 받아서 처리 | `markdown = convert("보고서.hwp")` | `str` |
+| 포맷 명시 | `convert("문서.hwp", "문서.md", format="markdown")` | `None` |
+
+### 여러 파일 일괄 변환
+
+```python
+from pathlib import Path
+from ureca_document_parser import convert
+
+for hwp_file in Path("documents").glob("*.hwp"):
+    output = Path("output") / hwp_file.with_suffix(".md").name
+    convert(hwp_file, output)
+```
+
+### 메타데이터 추출
+
+```python
+from ureca_document_parser import get_registry
+
+registry = get_registry()
+doc = registry.parse("보고서.hwp")
+
+print(f"제목: {doc.metadata.title}")
+print(f"작성자: {doc.metadata.author}")
+print(f"포맷: {doc.metadata.source_format}")
+print(f"추가 정보: {doc.metadata.extra}")
+```
+
+### 에러 처리
+
+```python
+from ureca_document_parser import convert, ParseError
+
+failed_files = []
+for hwp_file in Path("documents").glob("*.hwp"):
+    try:
+        output = Path("output") / hwp_file.with_suffix(".md").name
+        convert(hwp_file, output)
+    except ParseError as e:
+        print(f"파싱 실패: {hwp_file.name}: {e}")
+        failed_files.append(hwp_file)
+```
+
+## CLI 사용법
+
+### 파일 변환하기
+
+```bash
+uv run ureca_document_parser 보고서.hwp -o 보고서.md
+uv run ureca_document_parser 제안서.hwpx -o 제안서.md
+```
+
+### 표준 출력으로 결과 보기
+
+```bash
+uv run ureca_document_parser 보고서.hwp
+uv run ureca_document_parser 보고서.hwp | less
+```
+
+### 명령줄 옵션
+
+| 옵션 | 설명 | 예시 |
+|------|------|------|
+| `input_file` | 변환할 입력 파일 경로 (필수) | `보고서.hwp` |
+| `-o`, `--output` | 출력 파일 경로 (미지정 시 표준 출력) | `-o 보고서.md` |
+| `-f`, `--format` | 출력 형식 (기본값: `markdown`) | `-f markdown` |
+| `--list-formats` | 지원하는 입력/출력 형식 목록 출력 | `--list-formats` |
+| `--help` | 도움말 메시지 출력 | `--help` |
+
+### 여러 파일 일괄 변환 (Bash)
+
+```bash
+for file in documents/*.hwp; do
+  uv run ureca_document_parser "$file" -o "output/$(basename "$file" .hwp).md"
+done
+```
+
+## LangChain 연동
+
+### 사전 준비
+
+```bash
+uv add "ureca_document_parser[langchain]"
+```
+
+### 기본 사용법
+
+`convert()` 함수에 `chunks=True`를 지정하면 HWP/HWPX 파일을 파싱하고, 텍스트를 청크로 분할해서 LangChain Document 리스트를 반환해요.
+
+```python
+from ureca_document_parser import convert
+
+chunks = convert("보고서.hwp", chunks=True, chunk_size=1000, chunk_overlap=200)
+
+for chunk in chunks:
+    print(chunk.page_content[:100])
+    print(chunk.metadata)  # {'source': '보고서.hwp', 'format': 'hwp'}
+```
+
+### 청킹 매개변수 가이드
+
+| 매개변수 | 기본값 | 권장값 | 설명 |
+|---------|--------|--------|------|
+| `chunk_size` | 1000 | 500~2000 | 각 청크의 최대 문자 수 |
+| `chunk_overlap` | 200 | chunk_size의 10~20% | 인접 청크 간 중복 문자 수 |
+
+- 짧은 청크 (500~800): 정확한 정보 검색에 유리
+- 중간 청크 (1000~1500): 범용적 사용에 적합
+- 긴 청크 (1500~2000): 요약이나 분석에 적합 (임베딩 모델 토큰 제한 확인 필요)
+
+### 벡터 스토어에 저장하기 (Chroma)
+
+```python
+from ureca_document_parser import convert
+from langchain_openai import OpenAIEmbeddings
+from langchain_chroma import Chroma
+
+chunks = convert("보고서.hwp", chunks=True, chunk_size=1000, chunk_overlap=200)
+
+embeddings = OpenAIEmbeddings()
+vectorstore = Chroma.from_documents(documents=chunks, embedding=embeddings)
+
+results = vectorstore.similarity_search("프로젝트 일정은?", k=3)
+```
+
+### RAG 에이전트 구축하기
+
+```python
+from ureca_document_parser import convert
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_chroma import Chroma
+from langchain.agents import create_agent
+from langchain.tools import tool
+
+chunks = convert("보고서.hwp", chunks=True)
+
+embeddings = OpenAIEmbeddings()
+vectorstore = Chroma.from_documents(documents=chunks, embedding=embeddings)
+
+@tool(response_format="content_and_artifact")
+def retrieve_context(query: str):
+    """문서에서 질문과 관련된 정보를 검색해요."""
+    retrieved_docs = vectorstore.similarity_search(query, k=3)
+    serialized = "\n\n".join(
+        f"Source: {doc.metadata}\nContent: {doc.page_content}"
+        for doc in retrieved_docs
+    )
+    return serialized, retrieved_docs
+
+llm = ChatOpenAI(model="gpt-4o")
+agent = create_agent(
+    llm,
+    tools=[retrieve_context],
+    system_prompt="검색 도구를 사용해서 문서 내용을 기반으로 질문에 답변하세요.",
+)
+
+response = agent.invoke(
+    {"messages": [{"role": "user", "content": "프로젝트의 주요 목표는 무엇인가요?"}]}
+)
+```
+
+### 다른 벡터 스토어
+
+Pinecone:
+
+```python
+from langchain_pinecone import PineconeVectorStore
+
+vectorstore = PineconeVectorStore.from_documents(
+    documents=chunks, embedding=embeddings, index_name="hwp-documents",
+)
+```
+
+FAISS:
+
+```python
+from langchain_community.vectorstores import FAISS
+
+vectorstore = FAISS.from_documents(chunks, embeddings)
+vectorstore.save_local("faiss_index")
+```
+
+### 고급: 직접 청크 분할하기
+
+```python
+from ureca_document_parser import convert
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+markdown_text = convert("보고서.hwp")
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=200,
+    separators=["\n## ", "\n### ", "\n\n", "\n", " ", ""],
+)
+
+chunks = splitter.create_documents(
+    [markdown_text],
+    metadatas=[{"source": "보고서.hwp", "format": "hwp"}],
+)
+```
+
+## 고급 사용법
+
+이 섹션은 파싱 결과를 프로그래밍 방식으로 직접 제어하고 싶은 고급 사용자를 위한 가이드예요.
+
+### Document 모델 이해하기
+
+`Document`는 파싱된 문서의 중간 표현(Intermediate Representation)이에요. 모든 파서는 이 모델을 생산하고, 모든 Writer는 이 모델을 소비해요.
+
+```python
+from ureca_document_parser.registry import get_registry
+
+registry = get_registry()
+doc = registry.parse("보고서.hwp")
+
+print(type(doc))           # <class 'Document'>
+print(len(doc.elements))   # 문서 요소 개수
+print(doc.metadata)        # Metadata(title=..., author=..., ...)
+```
+
+Document 구조:
+
+```python
+doc.elements   # list[DocumentElement] — 문서 내용
+doc.metadata   # Metadata — 메타데이터
+```
+
+### 요소 타입
+
+```python
+from ureca_document_parser.models import Paragraph, Table, ListItem, Image, HorizontalRule
+
+for element in doc.elements:
+    if isinstance(element, Paragraph):
+        print(f"문단: {element.text[:50]}...")
+    elif isinstance(element, Table):
+        print(f"표: {len(element.rows)}행 x {len(element.rows[0].cells)}열")
+    elif isinstance(element, ListItem):
+        print(f"리스트: {element.text}")
+    elif isinstance(element, Image):
+        print(f"이미지: {element.alt_text}")
+    elif isinstance(element, HorizontalRule):
+        print("구분선")
+```
+
+### 헤딩 추출하기
+
+```python
+headings = [
+    el for el in doc.elements
+    if isinstance(el, Paragraph) and el.heading_level > 0
+]
+
+for h in headings:
+    indent = "  " * (h.heading_level - 1)
+    print(f"{indent}{'#' * h.heading_level} {h.text}")
+```
+
+### 표 데이터 추출하기
+
+```python
+tables = [el for el in doc.elements if isinstance(el, Table)]
+
+for i, table in enumerate(tables):
+    for row in table.rows:
+        row_text = []
+        for cell in row.cells:
+            cell_text = " ".join(
+                item.text for item in cell.content if isinstance(item, Paragraph)
+            )
+            row_text.append(cell_text)
+        print(" | ".join(row_text))
+```
+
+### 요소 재구성
+
+```python
+from ureca_document_parser.models import Document
+
+summary_elements = [
+    el for el in doc.elements
+    if (isinstance(el, Paragraph) and el.heading_level > 0) or isinstance(el, Table)
+]
+
+summary_doc = Document(elements=summary_elements, metadata=doc.metadata)
+markdown = registry.write(summary_doc, "markdown")
+```
+
+## Formats
+
+### HWP
+
+HWP(한글과컴퓨터 워드프로세서)는 대한민국에서 가장 널리 사용되는 워드프로세서 포맷이에요. HWP v5(아래한글 2007 이후)는 바이너리 형식으로, OLE2 컨테이너 안에 압축된 레코드 스트림을 담고 있어요.
+
+주요 특징:
+- 바이너리 포맷 — 사람이 읽을 수 없는 이진 형식
+- 레코드 기반 구조 — 문단, 표, 이미지 등이 레코드 단위로 저장
+- 압축 지원 — zlib 압축 사용
+- 풍부한 메타데이터 — 작성자, 제목, 생성 일시 등 포함
+
+지원 기능:
+| 기능 | 상태 | 설명 |
+|------|------|------|
+| 텍스트 추출 | 지원 | 유니코드 텍스트를 완전히 지원 |
+| 문단 구조 | 지원 | 문단 단위로 구조화해서 추출 |
+| 제목 인식 | 지원 | 스타일 기반으로 제목 레벨을 자동 인식 |
+| 표 추출 | 부분 지원 | 기본 표 구조 지원, 복잡한 병합 구조는 제한적 |
+| 리스트 | 지원 | 순서 있는/없는 리스트 지원 |
+| 메타데이터 | 지원 | 작성자, 제목, 생성 일시 등 추출 |
+| 이미지 | 미지원 | 대체 텍스트만 표시 |
+| 도형/차트 | 미지원 | |
+| 머리글/바닥글 | 미지원 | |
+| 각주/미주 | 미지원 | |
+
+### HWPX
+
+HWPX는 아래한글의 최신 파일 포맷으로, ZIP 압축 내부에 XML 파일들을 담고 있어요. 표준 라이브러리(`zipfile`, `xml.etree`)만 사용하므로 추가 의존성이 필요 없어요.
+
+HWP vs HWPX:
+| 특징 | HWP | HWPX |
+|------|-----|------|
+| 포맷 | 바이너리 | XML |
+| 압축 | zlib (레코드별) | ZIP (파일 전체) |
+| 가독성 | 불가능 | 가능 (압축 해제 후) |
+| 호환성 | 아래한글 2007+ | 아래한글 2014+ |
+| 파싱 복잡도 | 높음 | 낮음 |
+| 외부 의존성 | olefile 필요 | 표준 라이브러리만 |
+
+지원 기능:
+| 기능 | 상태 | 설명 |
+|------|------|------|
+| 텍스트 추출 | 지원 | XML 기반으로 정확하게 추출 |
+| 문단 구조 | 지원 | 문단 단위로 구조화해서 추출 |
+| 제목 인식 | 지원 | 스타일 기반으로 제목 레벨을 자동 인식 |
+| 표 추출 | 부분 지원 | 기본 표 구조 지원, 복잡한 병합 구조는 제한적 |
+| 리스트 | 지원 | 순서 있는/없는 리스트 지원 |
+| 메타데이터 | 지원 | 작성자, 제목, 생성 일시 등 추출 |
+| 이미지 | 미지원 | 대체 텍스트만 표시 |
+| 도형/차트 | 미지원 | |
+| 수식 | 미지원 | |
+
+### PDF
+
+PDF 파싱은 pymupdf (fitz) 라이브러리를 사용해요. 추가 설치가 필요해요.
+
+```bash
+uv add "ureca_document_parser[pdf]"
+```
+
+지원 기능:
+| 기능 | 상태 | 설명 |
+|------|------|------|
+| 텍스트 추출 | 지원 | 페이지별로 텍스트 추출 |
+| 문단 구조 | 부분 지원 | 빈 줄 기준으로 문단 구분 (레이아웃에 따라 부정확할 수 있음) |
+| 제목 인식 | 미지원 | PDF는 제목 정보를 명시적으로 포함하지 않음 |
+| 표 추출 | 미지원 | 텍스트로만 추출 |
+| 메타데이터 | 지원 | 제목, 작성자, 생성 도구 등 추출 |
+| 이미지 | 미지원 | |
+
+## Optional
+
+### 아키텍처
+
+전체 파이프라인: 입력 파일 → FormatRegistry(자동 라우팅) → 파서(HwpParser/HwpxParser) → Document(중간 표현) → Writer(MarkdownWriter) → 출력(.md)
+
+디렉토리 구조:
+
+```
+src/ureca_document_parser/
+├── __init__.py        # 공개 API (convert, get_registry)
+├── __main__.py        # python -m ureca_document_parser
+├── cli.py             # CLI (argparse, 레지스트리 기반 자동 라우팅)
+├── models.py          # Document 모델 (Paragraph, Table, Image, ListItem, ...)
+├── protocols.py       # Parser / Writer Protocol (구조적 서브타이핑)
+├── registry.py        # FormatRegistry (확장자→파서, 포맷명→Writer 매핑)
+├── styles.py          # 공유 헤딩 패턴
+├── hwp/
+│   ├── parser.py      # HWP v5 바이너리 파서 (olefile)
+│   ├── records.py     # 바이너리 레코드 파싱
+│   ├── text.py        # 문자 스캐닝 및 텍스트 추출
+│   └── tables.py      # 3단계 테이블 추출
+├── hwpx/
+│   └── parser.py      # HWPX 파서 (zipfile + xml.etree)
+└── writers/
+    └── markdown.py    # Markdown 작성기
+```
+
+Document 모델: Document = list[DocumentElement] + Metadata. 요소 타입으로 Paragraph, Table, Image, ListItem, Link, HorizontalRule이 있어요.
+
+Protocol 기반 인터페이스: ABC 대신 `typing.Protocol`을 사용한 구조적 서브타이핑이에요.
+
+```python
+class Parser(Protocol):
+    @staticmethod
+    def extensions() -> list[str]: ...
+    @staticmethod
+    def parse(filepath: Path | str) -> Document: ...
+
+class Writer(Protocol):
+    @staticmethod
+    def format_name() -> str: ...
+    @staticmethod
+    def file_extension() -> str: ...
+    @staticmethod
+    def write(doc: Document) -> str: ...
+```
+
+FormatRegistry: 파일 확장자→파서, 포맷명→Writer를 매핑하는 스레드 안전 싱글톤이에요. `get_registry()`로 접근해요.
+
+### 포맷 확장 가이드
+
+새 입력 포맷을 지원하려면 세 단계가 필요해요.
+
+1. Protocol 시그니처에 맞는 파서 클래스 작성:
+
+```python
+from ureca_document_parser.models import Document, Metadata, Paragraph
+
+class MyParser:
+    @staticmethod
+    def extensions() -> list[str]:
+        return [".myext"]
+
+    @staticmethod
+    def parse(filepath):
+        doc = Document(metadata=Metadata(source_format="myext"))
+        # 파싱 로직...
+        return doc
+```
+
+2. `registry.py`의 `_auto_register()`에 등록 (`try/except ImportError`로 감싸기)
+
+3. 선택적 의존성이 필요하면 `pyproject.toml`에 추가
+
+새 Writer도 동일한 흐름:
+
+```python
+class MyWriter:
+    @staticmethod
+    def format_name() -> str:
+        return "myformat"
+
+    @staticmethod
+    def file_extension() -> str:
+        return ".myext"
+
+    @staticmethod
+    def write(doc: Document) -> str:
+        # 변환 로직...
+        return result
+```
+
+핵심 규칙:
+- 반드시 Document를 반환/소비해야 해요
+- 선택적 의존성은 함수 내부에서 lazy import
+- 상속 불필요 — 메서드 시그니처만 맞으면 Protocol 호환
