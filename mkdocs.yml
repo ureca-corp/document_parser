@@ -56,13 +56,16 @@ markdown_extensions:
 
 nav:
   - 홈: index.md
-  - 시작하기: getting-started.md
+  - 설치: installation.md
+  - 포맷:
+      - HWP: formats/hwp.md
+      - HWPX: formats/hwpx.md
   - 가이드:
-      - 아키텍처: architecture.md
-      - 포맷 확장 가이드: adding-formats.md
-  - API 레퍼런스:
-      - 개요: api/index.md
-      - Document 모델: api/models.md
-      - 파서 (HWP/HWPX): api/parsers.md
-      - Writer: api/writers.md
-      - FormatRegistry: api/registry.md
+      - CLI 사용법: guides/cli.md
+      - Python API: guides/python-api.md
+      - LangChain 연동: guides/langchain.md
+      - 고급 사용법: guides/advanced.md
+  - API 레퍼런스: api-reference.md
+  - 기술 참조:
+      - 아키텍처: reference/architecture.md
+      - 포맷 확장하기: reference/extending.md
