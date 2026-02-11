@@ -45,6 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 전체 히스토리 가져오기 (릴리즈 노트 생성용)
 
       - name: Create and push tag
         env:
@@ -55,51 +57,25 @@ jobs:
           git tag -a "v${VERSION}" -m "Release v${VERSION}"
           git push origin "v${VERSION}"
 
-      - name: Generate release notes
-        id: notes
+      - name: Create GitHub Release with auto-generated notes
         env:
           VERSION: ${{ needs.check-version.outputs.new-version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 마지막 태그 이후 커밋 로그 추출
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          if [ -z "$LAST_TAG" ]; then
-            COMMITS=$(git log --pretty=format:"- %s" --no-merges)
-          else
-            COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %s" --no-merges)
-          fi
+          gh release create "v${VERSION}" \
+            --title "Release v${VERSION}" \
+            --generate-notes \
+            --notes-start-tag $(git describe --tags --abbrev=0 v${VERSION}^ 2>/dev/null || echo "") \
+            --notes "## 설치
 
-          # 멀티라인 출력 처리
-          {
-            echo "notes<<EOF"
-            echo "## 변경사항"
-            echo ""
-            echo "$COMMITS"
-            echo ""
-            echo "## 설치"
-            echo ""
-            echo '```bash'
-            echo "uv add ureca_document_parser==${VERSION}"
-            echo '```'
-            echo ""
-            echo "또는 pip:"
-            echo ""
-            echo '```bash'
-            echo "pip install ureca_document_parser==${VERSION}"
-            echo '```'
-            echo ""
-            echo "📚 [문서](https://ureca-corp.github.io/document_parser/)"
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
+          \`\`\`bash
+          uv add ureca_document_parser==${VERSION}
+          \`\`\`
 
-      - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ needs.check-version.outputs.new-version }}
-          NOTES: ${{ steps.notes.outputs.notes }}
-        with:
-          tag_name: v${{ needs.check-version.outputs.new-version }}
-          release_name: Release v${{ needs.check-version.outputs.new-version }}
-          body: ${{ steps.notes.outputs.notes }}
-          draft: false
-          prerelease: false
+          또는 pip:
+
+          \`\`\`bash
+          pip install ureca_document_parser==${VERSION}
+          \`\`\`
+
+          📚 [문서](https://ureca-corp.github.io/document_parser/)"
